@@ -1,182 +1,481 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Photo Carousel</title>
-<style>
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    background:#0f172a;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    font-family:Arial,sans-serif;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Readable Photo Carousel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-  .carousel{
-    position:relative;
-    width:min(1000px,90vw);
-    aspect-ratio:16/9;
-    overflow:hidden;
-    border-radius:20px;
-    background:#020617;
-  }
+    :root {
+      --bg: #0f172a;
+      --panel: #020617;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.08);
+      --glass: rgba(15, 23, 42, 0.72);
+      --glass-hover: rgba(30, 41, 59, 0.92);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      --radius: 22px;
+    }
 
-  .slides{
-    display:flex;
-    height:100%;
-    transition:transform .4s ease;
-  }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 40%),
+        var(--bg);
+    }
 
-  .slide{
-    min-width:100%;
-    cursor:pointer;
-  }
+    .carousel {
+      position: relative;
+      width: min(1000px, 92vw);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
 
-  .slide img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-  }
+    .slides {
+      display: flex;
+      height: 100%;
+      transition: transform 0.45s ease;
+    }
 
-  .nav{
-    position:absolute;
-    top:50%;
-    transform:translateY(-50%);
-    width:44px;
-    height:44px;
-    border-radius:50%;
-    border:none;
-    cursor:pointer;
-    background:rgba(0,0,0,.5);
-    color:white;
-    font-size:20px;
-    z-index:2;
-  }
+    .slide {
+      min-width: 100%;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background: #000;
+    }
 
-  .prev{left:10px}
-  .next{right:10px}
+    .slide img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
 
-  .lightbox{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.9);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .25s ease;
-    z-index:999;
-  }
+    .slide::after {
+      content: "Click to preview";
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(6px);
+    }
 
-  .lightbox.open{
-    opacity:1;
-    pointer-events:auto;
-  }
+    .nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 2;
+      color: white;
+      font-size: 22px;
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
 
-  .lightbox img{
-    max-width:100%;
-    max-height:100%;
-    object-fit:contain;
-    border-radius:12px;
-  }
+    .nav:hover {
+      background: var(--glass-hover);
+      transform: translateY(-50%) scale(1.05);
+    }
 
-  .close{
-    position:absolute;
-    top:18px;
-    right:18px;
-    width:44px;
-    height:44px;
-    border:none;
-    border-radius:50%;
-    cursor:pointer;
-    background:rgba(255,255,255,.12);
-    color:#fff;
-    font-size:22px;
-  }
-</style>
+    .prev { left: 12px; }
+    .next { right: 12px; }
+
+    .indicator {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(6px);
+      font-size: 14px;
+      color: #fff;
+      z-index: 2;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      z-index: 999;
+    }
+
+    .lightbox.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      position: relative;
+      width: min(1200px, 96vw);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .lightbox-viewer {
+      position: relative;
+      width: 100%;
+      min-height: 60vh;
+      max-height: 78vh;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      cursor: zoom-in;
+    }
+
+    .lightbox-viewer.zoomed {
+      cursor: grab;
+    }
+
+    .lightbox-viewer.dragging {
+      cursor: grabbing;
+    }
+
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 78vh;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      transform-origin: center center;
+      transition: transform 0.12s ease;
+      will-change: transform;
+    }
+
+    .lightbox-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+    }
+
+    .lightbox-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .lightbox-count {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .close {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 46px;
+      height: 46px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 22px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, background 0.2s ease;
+      z-index: 5;
+    }
+
+    .close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .nav {
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+      }
+
+      .slide::after {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .lightbox-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .close {
+        top: 8px;
+        right: 8px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<div class="carousel">
-  <button class="nav prev">‹</button>
-  <div class="slides" id="slides"></div>
-  <button class="nav next">›</button>
-</div>
+  <div class="carousel" aria-label="Image carousel">
+    <button class="nav prev" id="prevBtn" aria-label="Previous image">‹</button>
+    <div class="slides" id="slides"></div>
+    <button class="nav next" id="nextBtn" aria-label="Next image">›</button>
+    <div class="indicator" id="indicator">1 / 1</div>
+  </div>
 
-<div class="lightbox" id="lightbox">
-  <button class="close" id="closeLightbox">✕</button>
-  <img id="lightboxImage" src="" alt="Preview">
-</div>
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-content">
+      <button class="close" id="closeBtn" aria-label="Close preview">✕</button>
 
-<script>
-// ADD YOUR IMAGE LINKS HERE
-const images=[
-  "https://panos5439.github.io/dai/gate1.png",
-  "https://panos5439.github.io/dai/gate2.png",
-];
+      <div class="lightbox-viewer" id="lightboxViewer">
+        <img id="lightboxImage" class="lightbox-image" src="" alt="Expanded preview" />
+      </div>
 
-const slides=document.getElementById('slides');
-const lightbox=document.getElementById('lightbox');
-const lightboxImage=document.getElementById('lightboxImage');
-const closeLightbox=document.getElementById('closeLightbox');
-let index=0;
+      <div class="lightbox-meta">
+        <div>
+          <div class="lightbox-title" id="lightboxTitle">Image</div>
+          <div class="hint">Click image or use mouse wheel to zoom. Drag when zoomed.</div>
+        </div>
+        <div class="lightbox-count" id="lightboxCount">1 / 1</div>
+      </div>
+    </div>
+  </div>
 
-images.forEach((src,i)=>{
-  const slide=document.createElement('div');
-  slide.className='slide';
+  <script>
+    const images = [
+      {
+        src: "https://panos5439.github.io/dai/gate1.png",
+        
+      },
+      {
+        src: "https://panos5439.github.io/dai/gate2.png",
+        
+      }
+    ];
 
-  const img=document.createElement('img');
-  img.src=src;
-  img.alt=`Photo ${i+1}`;
-  img.addEventListener('click',()=>openPreview(src));
+    const slides = document.getElementById("slides");
+    const indicator = document.getElementById("indicator");
 
-  slide.appendChild(img);
-  slides.appendChild(slide);
-});
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
 
-function update(){
-  slides.style.transform=`translateX(-${index*100}%)`;
-}
+    const lightbox = document.getElementById("lightbox");
+    const closeBtn = document.getElementById("closeBtn");
+    const lightboxViewer = document.getElementById("lightboxViewer");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const lightboxTitle = document.getElementById("lightboxTitle");
+    const lightboxCount = document.getElementById("lightboxCount");
 
-function next(){
-  index=(index+1)%images.length;
-  update();
-}
+    let currentIndex = 0;
 
-function prev(){
-  index=(index-1+images.length)%images.length;
-  update();
-}
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
 
-function openPreview(src){
-  lightboxImage.src=src;
-  lightbox.classList.add('open');
-}
+    function renderSlides() {
+      slides.innerHTML = "";
 
-function closePreview(){
-  lightbox.classList.remove('open');
-}
+      images.forEach((image, index) => {
+        const slide = document.createElement("div");
+        slide.className = "slide";
 
-document.querySelector('.next').onclick=next;
-document.querySelector('.prev').onclick=prev;
-closeLightbox.onclick=closePreview;
-lightbox.addEventListener('click',e=>{
-  if(e.target===lightbox) closePreview();
-});
+        const img = document.createElement("img");
+        img.src = image.src;
+        img.alt = image.title || `Photo ${index + 1}`;
+        img.loading = "lazy";
 
-document.addEventListener('keydown',e=>{
-  if(e.key==='ArrowRight') next();
-  if(e.key==='ArrowLeft') prev();
-  if(e.key==='Escape') closePreview();
-});
-</script>
+        img.addEventListener("click", () => openLightbox(index));
 
+        slide.appendChild(img);
+        slides.appendChild(slide);
+      });
+
+      updateCarousel();
+    }
+
+    function updateCarousel() {
+      slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+      indicator.textContent = `${currentIndex + 1} / ${images.length}`;
+    }
+
+    function goToNext() {
+      currentIndex = (currentIndex + 1) % images.length;
+      updateCarousel();
+    }
+
+    function goToPrev() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      updateCarousel();
+    }
+
+    function resetZoom() {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      applyTransform();
+      lightboxViewer.classList.remove("zoomed", "dragging");
+    }
+
+    function applyTransform() {
+      lightboxImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+      if (scale > 1) {
+        lightboxViewer.classList.add("zoomed");
+      } else {
+        lightboxViewer.classList.remove("zoomed", "dragging");
+        translateX = 0;
+        translateY = 0;
+        lightboxImage.style.transform = `translate(0px, 0px) scale(1)`;
+      }
+    }
+
+    function openLightbox(index) {
+      currentIndex = index;
+      const image = images[index];
+
+      lightboxImage.src = image.src;
+      lightboxImage.alt = image.title || `Photo ${index + 1}`;
+      lightboxTitle.textContent = image.title || `Photo ${index + 1}`;
+      lightboxCount.textContent = `${index + 1} / ${images.length}`;
+
+      resetZoom();
+
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+      resetZoom();
+    }
+
+    function toggleZoom() {
+      if (scale === 1) {
+        scale = 2;
+      } else {
+        scale = 1;
+        translateX = 0;
+        translateY = 0;
+      }
+      applyTransform();
+    }
+
+    prevBtn.addEventListener("click", goToPrev);
+    nextBtn.addEventListener("click", goToNext);
+    closeBtn.addEventListener("click", closeLightbox);
+
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) {
+        closeLightbox();
+      }
+    });
+
+    lightboxImage.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleZoom();
+    });
+
+    lightboxViewer.addEventListener("wheel", (event) => {
+      event.preventDefault();
+
+      const zoomStep = 0.2;
+      const nextScale = event.deltaY < 0 ? scale + zoomStep : scale - zoomStep;
+      scale = Math.min(Math.max(1, nextScale), 4);
+
+      if (scale === 1) {
+        translateX = 0;
+        translateY = 0;
+      }
+
+      applyTransform();
+    }, { passive: false });
+
+    lightboxViewer.addEventListener("pointerdown", (event) => {
+      if (scale <= 1) return;
+
+      isDragging = true;
+      startX = event.clientX - translateX;
+      startY = event.clientY - translateY;
+      lightboxViewer.classList.add("dragging");
+    });
+
+    window.addEventListener("pointermove", (event) => {
+      if (!isDragging || scale <= 1) return;
+
+      translateX = event.clientX - startX;
+      translateY = event.clientY - startY;
+      applyTransform();
+    });
+
+    window.addEventListener("pointerup", () => {
+      isDragging = false;
+      lightboxViewer.classList.remove("dragging");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") goToNext();
+      if (event.key === "ArrowLeft") goToPrev();
+      if (event.key === "Escape") closeLightbox();
+
+      if (lightbox.classList.contains("open") && event.key === "+") {
+        scale = Math.min(scale + 0.2, 4);
+        applyTransform();
+      }
+
+      if (lightbox.classList.contains("open") && event.key === "-") {
+        scale = Math.max(scale - 0.2, 1);
+        applyTransform();
+      }
+    });
+
+    renderSlides();
+  </script>
 </body>
 </html>
