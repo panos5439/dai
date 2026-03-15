@@ -114,6 +114,543 @@
       transform: translateY(-50%) scale(1.05);
     }
 
+    .prev {
+      left: 12px;
+    }
+
+    .next {
+      right: 12px;
+    }
+
+    .indicator {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(6px);
+      font-size: 14px;
+      color: #fff;
+      z-index: 2;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      z-index: 999;
+    }
+
+    .lightbox.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      position: relative;
+      width: min(1200px, 96vw);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .lightbox-viewer {
+      position: relative;
+      width: 100%;
+      min-height: 60vh;
+      max-height: 78vh;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      touch-action: none;
+      cursor: zoom-in;
+    }
+
+    .lightbox-viewer.zoomed {
+      cursor: grab;
+    }
+
+    .lightbox-viewer.dragging {
+      cursor: grabbing;
+    }
+
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 78vh;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      transform-origin: center center;
+      transition: transform 0.12s ease;
+      will-change: transform;
+    }
+
+    .lightbox-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+    }
+
+    .lightbox-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .lightbox-count {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .close {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 46px;
+      height: 46px;
+      font-size: 22px;
+      z-index: 5;
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 52px;
+      height: 52px;
+      z-index: 4;
+      font-size: 24px;
+    }
+
+    .lightbox-nav.prev {
+      left: 14px;
+    }
+
+    .lightbox-nav.next {
+      right: 14px;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .nav,
+      .lightbox-nav {
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+      }
+
+      .slide::after {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .lightbox-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .close {
+        top: 8px;
+        right: 8px;
+        width: 42px;
+        height: 42px;
+      }
+
+      .lightbox-nav.prev {
+        left: 8px;
+      }
+
+      .lightbox-nav.next {
+        right: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="carousel" aria-label="Image carousel">
+    <button class="nav prev" id="prevBtn" aria-label="Previous image">‹</button>
+    <div class="slides" id="slides"></div>
+    <button class="nav next" id="nextBtn" aria-label="Next image">›</button>
+    <div class="indicator" id="indicator">1 / 1</div>
+  </div>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-content">
+      <button class="close" id="closeBtn" aria-label="Close preview">✕</button>
+
+      <div class="lightbox-viewer" id="lightboxViewer">
+        <button class="lightbox-nav prev" id="lightboxPrev" aria-label="Previous preview">‹</button>
+        <img id="lightboxImage" class="lightbox-image" src="" alt="Expanded preview" />
+        <button class="lightbox-nav next" id="lightboxNext" aria-label="Next preview">›</button>
+      </div>
+
+      <div class="lightbox-meta">
+        <div>
+          <div class="lightbox-title" id="lightboxTitle">Image</div>
+          <div class="hint">Double click to zoom. Wheel or pinch to zoom. Drag when zoomed.</div>
+        </div>
+        <div class="lightbox-count" id="lightboxCount">1 / 1</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const images = [
+      { src: "https://panos5439.github.io/dai/rulerofagean.png",  },
+      { src: "https://panos5439.github.io/dai/rulerofagean2.png",  },
+      { src: "https://panos5439.github.io/dai/rulerofagean3.png",  }
+    ];
+
+    const slides = document.getElementById("slides");
+    const indicator = document.getElementById("indicator");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    const lightbox = document.getElementById("lightbox");
+    const closeBtn = document.getElementById("closeBtn");
+    const lightboxViewer = document.getElementById("lightboxViewer");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const lightboxTitle = document.getElementById("lightboxTitle");
+    const lightboxCount = document.getElementById("lightboxCount");
+    const lightboxPrev = document.getElementById("lightboxPrev");
+    const lightboxNext = document.getElementById("lightboxNext");
+
+    let currentIndex = 0;
+
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    let activePointers = new Map();
+    let pinchStartDistance = 0;
+    let pinchStartScale = 1;
+    let lastTapTime = 0;
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+
+    function renderSlides() {
+      slides.innerHTML = "";
+
+      images.forEach((image, index) => {
+        const slide = document.createElement("div");
+        slide.className = "slide";
+
+        const img = document.createElement("img");
+        img.src = image.src;
+        img.alt = image.title || `Photo ${index + 1}`;
+        img.loading = "lazy";
+
+        img.addEventListener("click", () => openLightbox(index));
+
+        slide.appendChild(img);
+        slides.appendChild(slide);
+      });
+
+      updateCarousel();
+    }
+
+    function updateCarousel() {
+      slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+      indicator.textContent = `${currentIndex + 1} / ${images.length}`;
+    }
+
+    function updateLightboxContent() {
+      const image = images[currentIndex];
+      lightboxImage.src = image.src;
+      lightboxImage.alt = image.title || `Photo ${currentIndex + 1}`;
+      lightboxTitle.textContent = image.title || `Photo ${currentIndex + 1}`;
+      lightboxCount.textContent = `${currentIndex + 1} / ${images.length}`;
+      updateCarousel();
+      resetZoom();
+    }
+
+    function goToNext() {
+      currentIndex = (currentIndex + 1) % images.length;
+      updateCarousel();
+      if (lightbox.classList.contains("open")) updateLightboxContent();
+    }
+
+    function goToPrev() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      updateCarousel();
+      if (lightbox.classList.contains("open")) updateLightboxContent();
+    }
+
+    function resetZoom() {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      applyTransform();
+      lightboxViewer.classList.remove("zoomed", "dragging");
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function applyTransform() {
+      const maxOffsetX = ((scale - 1) * lightboxViewer.clientWidth) / 2;
+      const maxOffsetY = ((scale - 1) * lightboxViewer.clientHeight) / 2;
+
+      translateX = clamp(translateX, -maxOffsetX, maxOffsetX);
+      translateY = clamp(translateY, -maxOffsetY, maxOffsetY);
+
+      if (scale <= 1) {
+        translateX = 0;
+        translateY = 0;
+        lightboxViewer.classList.remove("zoomed", "dragging");
+        lightboxImage.style.transform = "translate(0px, 0px) scale(1)";
+        return;
+      }
+
+      lightboxViewer.classList.add("zoomed");
+      lightboxImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+
+    function openLightbox(index) {
+      currentIndex = index;
+      updateLightboxContent();
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+      resetZoom();
+      activePointers.clear();
+      isDragging = false;
+    }
+
+    function zoomTo(newScale) {
+      scale = clamp(newScale, 1, 4);
+      applyTransform();
+    }
+
+    function toggleZoom() {
+      if (scale === 1) {
+        zoomTo(2);
+      } else {
+        zoomTo(1);
+      }
+    }
+
+    function getDistance(p1, p2) {
+      const dx = p2.clientX - p1.clientX;
+      const dy = p2.clientY - p1.clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    prevBtn.addEventListener("click", goToPrev);
+    nextBtn.addEventListener("click", goToNext);
+
+    lightboxPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      goToPrev();
+    });
+
+    lightboxNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      goToNext();
+    });
+
+    closeBtn.addEventListener("click", closeLightbox);
+
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) closeLightbox();
+    });
+
+    lightboxImage.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      toggleZoom();
+    });
+
+    lightboxImage.addEventListener("click", (event) => {
+      if (event.detail === 1) {
+        event.stopPropagation();
+      }
+    });
+
+    lightboxViewer.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const zoomStep = event.deltaY < 0 ? 0.2 : -0.2;
+      zoomTo(scale + zoomStep);
+    }, { passive: false });
+
+    lightboxViewer.addEventListener("pointerdown", (event) => {
+      activePointers.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY
+      });
+
+      if (activePointers.size === 2) {
+        const points = [...activePointers.values()];
+        pinchStartDistance = getDistance(points[0], points[1]);
+        pinchStartScale = scale;
+        isDragging = false;
+        return;
+      }
+
+      const now = Date.now();
+      const isTouch = event.pointerType === "touch";
+      if (isTouch && now - lastTapTime < 280) {
+        toggleZoom();
+      }
+      lastTapTime = now;
+
+      swipeStartX = event.clientX;
+      swipeStartY = event.clientY;
+
+      if (scale > 1) {
+        isDragging = true;
+        dragStartX = event.clientX - translateX;
+        dragStartY = event.clientY - translateY;
+        lightboxViewer.classList.add("dragging");
+      }
+    });
+
+    lightboxViewer.addEventListener("pointermove", (event) => {
+      if (activePointers.has(event.pointerId)) {
+        activePointers.set(event.pointerId, {
+          clientX: event.clientX,
+          clientY: event.clientY
+        });
+      }
+
+      if (activePointers.size === 2) {
+        const points = [...activePointers.values()];
+        const distance = getDistance(points[0], points[1]);
+        const scaleFactor = distance / pinchStartDistance;
+        zoomTo(pinchStartScale * scaleFactor);
+        return;
+      }
+
+      if (!isDragging || scale <= 1) return;
+
+      translateX = event.clientX - dragStartX;
+      translateY = event.clientY - dragStartY;
+      applyTransform();
+    });
+
+    function endPointer(event) {
+      const startX = swipeStartX;
+      const startY = swipeStartY;
+      const endX = event.clientX;
+      const endY = event.clientY;
+
+      activePointers.delete(event.pointerId);
+
+      if (activePointers.size < 2) {
+        pinchStartDistance = 0;
+      }
+
+      if (isDragging) {
+        isDragging = false;
+        lightboxViewer.classList.remove("dragging");
+        return;
+      }
+
+      if (scale === 1) {
+        const dx = endX - startX;
+        const dy = endY - startY;
+
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) goToNext();
+          else goToPrev();
+        }
+      }
+    }
+
+    lightboxViewer.addEventListener("pointerup", endPointer);
+    lightboxViewer.addEventListener("pointercancel", endPointer);
+    lightboxViewer.addEventListener("pointerleave", (event) => {
+      if (!isDragging) activePointers.delete(event.pointerId);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeLightbox();
+
+      if (lightbox.classList.contains("open")) {
+        if (event.key === "ArrowRight") goToNext();
+        if (event.key === "ArrowLeft") goToPrev();
+        if (event.key === "+" || event.key === "=") zoomTo(scale + 0.2);
+        if (event.key === "-") zoomTo(scale - 0.2);
+        if (event.key === "0") resetZoom();
+      } else {
+        if (event.key === "ArrowRight") goToNext();
+        if (event.key === "ArrowLeft") goToPrev();
+      }
+    });
+
+    renderSlides();
+  </script>
+</body>
+</html>      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(6px);
+    }
+
+    .nav,
+    .lightbox-nav,
+    .close {
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: white;
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .nav:hover,
+    .lightbox-nav:hover,
+    .close:hover {
+      background: var(--glass-hover);
+      transform: scale(1.05);
+    }
+
+    .nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      z-index: 2;
+      font-size: 22px;
+    }
+
+    .nav:hover {
+      transform: translateY(-50%) scale(1.05);
+    }
+
     .prev { left: 12px; }
     .next { right: 12px; }
 
