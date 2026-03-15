@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Carousel</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    font-family:Arial,sans-serif;
+  }
+
+  .carousel{
+    position:relative;
+    width:min(1000px,90vw);
+    aspect-ratio:16/9;
+    overflow:hidden;
+    border-radius:20px;
+    background:#020617;
+  }
+
+  .slides{
+    display:flex;
+    height:100%;
+    transition:transform .4s ease;
+  }
+
+  .slide{
+    min-width:100%;
+    cursor:pointer;
+  }
+
+  .slide img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+
+  .nav{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+    background:rgba(0,0,0,.5);
+    color:white;
+    font-size:20px;
+    z-index:2;
+  }
+
+  .prev{left:10px}
+  .next{right:10px}
+
+  .lightbox{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:999;
+  }
+
+  .lightbox.open{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .lightbox img{
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
+    border-radius:12px;
+  }
+
+  .close{
+    position:absolute;
+    top:18px;
+    right:18px;
+    width:44px;
+    height:44px;
+    border:none;
+    border-radius:50%;
+    cursor:pointer;
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    font-size:22px;
+  }
+</style>
+</head>
+<body>
+
+<div class="carousel">
+  <button class="nav prev">‹</button>
+  <div class="slides" id="slides"></div>
+  <button class="nav next">›</button>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="close" id="closeLightbox">✕</button>
+  <img id="lightboxImage" src="" alt="Preview">
+</div>
+
+<script>
+// ADD YOUR IMAGE LINKS HERE
+const images=[
+  "https://panos5439.github.io/dai/rulerofagean.png",
+  "https://panos5439.github.io/dai/rulerofagean2.png",
+  "https://panos5439.github.io/dai/rulerofagean3.png"
+];
+
+const slides=document.getElementById('slides');
+const lightbox=document.getElementById('lightbox');
+const lightboxImage=document.getElementById('lightboxImage');
+const closeLightbox=document.getElementById('closeLightbox');
+let index=0;
+
+images.forEach((src,i)=>{
+  const slide=document.createElement('div');
+  slide.className='slide';
+
+  const img=document.createElement('img');
+  img.src=src;
+  img.alt=`Photo ${i+1}`;
+  img.addEventListener('click',()=>openPreview(src));
+
+  slide.appendChild(img);
+  slides.appendChild(slide);
+});
+
+function update(){
+  slides.style.transform=`translateX(-${index*100}%)`;
+}
+
+function next(){
+  index=(index+1)%images.length;
+  update();
+}
+
+function prev(){
+  index=(index-1+images.length)%images.length;
+  update();
+}
+
+function openPreview(src){
+  lightboxImage.src=src;
+  lightbox.classList.add('open');
+}
+
+function closePreview(){
+  lightbox.classList.remove('open');
+}
+
+document.querySelector('.next').onclick=next;
+document.querySelector('.prev').onclick=prev;
+closeLightbox.onclick=closePreview;
+lightbox.addEventListener('click',e=>{
+  if(e.target===lightbox) closePreview();
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') next();
+  if(e.key==='ArrowLeft') prev();
+  if(e.key==='Escape') closePreview();
+});
+</script>
+
+</body>
+</html>
